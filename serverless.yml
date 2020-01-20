@@ -1,0 +1,25 @@
+service: restAPI-using-mongo
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: us-east-1
+  profile: serverless-admin
+
+functions:
+  createPost:
+    handler: handler.createItem
+    events:
+      - http:
+          path: item
+          method: post
+          cors: true
+  getPost:
+    handler: handler.getItem
+    events:
+      - http:
+          path: item
+          method: get
+          cors: true
+plugins:
+  - serverless-offline
