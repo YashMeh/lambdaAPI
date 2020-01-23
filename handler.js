@@ -13,20 +13,30 @@ const itemSchema = {
   }
 };
 let conn = null;
-const createErrorResponse = (statusCode, message) => ({
-  statusCode: statusCode || 501,
-  headers: { "Content-Type": "text/plain" },
-  body: message || "Incorrect id"
-});
-module.exports.createItem = async (event, context, callback) => {
+const waitDB = conn => {
+  return new Promise((resolve, reject) => {
+    if (conn == null) {
+      mongoose
+        .createConnection(dbURI, {
+          bufferCommands: false,
+          bufferMaxEntries: 0
+        })
+        .then(res => {
+          console.log("Called");
+          res.model("Item", new mongoose.Schema(itemSchema));
+          resolve(res);
+        })
+        .catch(err => {
+          reject("rejected");
+        });
+    } else {
+      resolve(conn);
+    }
+  });
+};
+module.exports.createItem = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
-  if (conn == null) {
-    conn = await mongoose.createConnection(dbURI, {
-      bufferCommands: false,
-      bufferMaxEntries: 0
-    });
-    conn.model("Item", new mongoose.Schema(itemSchema));
-  }
+  conn = await waitDB(conn);
   const data = JSON.parse(event.body);
   const itemObject = {
     name: data.name,
@@ -41,19 +51,16 @@ module.exports.createItem = async (event, context, callback) => {
     };
     return response;
   } catch {
-    const errorRes = createErrorResponse(500, "Internal Server error");
+    const errorRes = {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server error" })
+    };
     return errorRes;
   }
 };
-module.exports.getItem = async (event, context, callback) => {
+module.exports.getItem = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
-  if (conn == null) {
-    conn = await mongoose.createConnection(dbURI, {
-      bufferCommands: false,
-      bufferMaxEntries: 0
-    });
-    conn.model("Item", new mongoose.Schema(itemSchema));
-  }
+  conn = await waitDB(conn);
   const item = conn.model("Item");
   try {
     const answer = await item.find({});
@@ -63,7 +70,75 @@ module.exports.getItem = async (event, context, callback) => {
     };
     return response;
   } catch {
-    const errorRes = createErrorResponse(500, "Internal Server error");
+    const errorRes = {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server error" })
+    };
+    return errorRes;
+  }
+};
+module.exports.oneItem = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+  conn = await waitDB(conn);
+  const item = conn.model("Item");
+  const _id = event.pathParameters.id;
+  try {
+    const answer = await item.find({ _id });
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify(answer)
+    };
+    return response;
+  } catch {
+    const errorRes = {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server error" })
+    };
+    return errorRes;
+  }
+};
+module.exports.deleteItem = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+  conn = await waitDB(conn);
+  const item = conn.model("Item");
+  const _id = event.pathParameters.id;
+  try {
+    await item.remove({ _id });
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify({ message: "File deleted" })
+    };
+    return response;
+  } catch {
+    const errorRes = {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server error" })
+    };
+    return errorRes;
+  }
+};
+module.exports.updateItem = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+  conn = await waitDB(conn);
+  const data = JSON.parse(event.body);
+  const itemObject = {
+    name: data.name,
+    cost: data.cost
+  };
+  const item = conn.model("Item");
+  const _id = event.pathParameters.id;
+  try {
+    await item.findByIdAndUpdate(_id, itemObject);
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify({ message: "File updated" })
+    };
+    return response;
+  } catch {
+    const errorRes = {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server error" })
+    };
     return errorRes;
   }
 };

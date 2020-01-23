@@ -7,19 +7,40 @@ provider:
   profile: serverless-admin
 
 functions:
-  createPost:
+  createItem:
     handler: handler.createItem
     events:
       - http:
           path: item
           method: post
           cors: true
-  getPost:
+  getItem:
     handler: handler.getItem
     events:
       - http:
           path: item
           method: get
+          cors: true
+  oneItem:
+    handler: handler.oneItem
+    events:
+      - http:
+          path: item/{id}
+          method: get
+          cors: true
+  deleteItem:
+    handler: handler.deleteItem
+    events:
+      - http:
+          path: item/{id}
+          method: delete
+          cors: true
+  updateItem:
+    handler: handler.updateItem
+    events:
+      - http:
+          path: item/{id}
+          method: put
           cors: true
 plugins:
   - serverless-offline
