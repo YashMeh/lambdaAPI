@@ -1,5 +1,7 @@
+const dotenv = require("dotenv");
+dotenv.config();
 const mongoose = require("mongoose");
-const dbURI = ""; // MongoDB Url
+const dbURI = process.env.dbURI; // MongoDB Url
 const itemSchema = {
   name: {
     type: String,
